@@ -1,7 +1,7 @@
 # OmniParser V2 - Production-Ready GUI Screen Parser
 
 [![License: CC-BY-4.0](https://img.shields.io/badge/License-CC--BY--4.0-blue.svg)](https://creativecommons.org/licenses/by/4.0/)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.68.0+-00a393.svg)](https://fastapi.tiangolo.com/)
 [![Modal](https://img.shields.io/badge/Modal-Serverless-blueviolet)](https://modal.com/)
 
@@ -21,6 +21,16 @@ The tool identifies buttons, text fields, icons, and other UI components from im
 - **📊 Performance Monitoring**: Detailed metrics with actionable optimization suggestions
 - **🔄 Parameter Recommendations**: Dynamic suggestions for optimal thread pool and batch size configuration
 - **🧪 FastAPI Development Server**: Built-in API for local testing and development
+
+## Prerequisites
+
+- **Python 3.10+**
+- **[Modal](https://modal.com/) account** (free tier available)
+- **Hugging Face CLI** for downloading model weights:
+
+```bash
+pip install huggingface-hub
+```
 
 ## Getting Started
 
@@ -63,18 +73,30 @@ python app.py --port 7861 --host 0.0.0.0
 
 ### Deploy to Modal Labs
 
+> Requires Modal SDK ≥ 1.0. Upgrade with `pip install --upgrade modal` if you hit deprecation errors from an older SDK.
+
 ```bash
 # Install Modal CLI
 pip install modal
 
-# Log in to Modal
-modal login
+# Authenticate with Modal (opens browser)
+python3 -m modal setup
+
+# Make sure model weights are downloaded first (see "Download Model Weights" above)
 
 # Deploy the application
-modal deploy app.py
+python3 -m modal deploy app.py
 ```
 
 After deployment, Modal provides a unique endpoint URL for your serverless API.
+
+> **Note:** This project targets Modal SDK 1.0+. If you're adapting an older deployment, these APIs have changed:
+> - `copy_local_file` → `add_local_file(..., copy=True)`
+> - `copy_local_dir` → `add_local_dir(..., copy=True)`
+> - `concurrency_limit=` → `max_containers=`
+> - `container_idle_timeout=` → `scaledown_window=`
+> - `allow_concurrent_inputs=` → `@modal.concurrent(...)`
+> - `@modal.web_endpoint` → `@modal.fastapi_endpoint`
 
 ## API Usage
 
@@ -123,11 +145,11 @@ Request body:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `CONCURRENCY_LIMIT` | Concurrent requests per container | 1 |
-| `MODAL_CONTAINER_TIMEOUT` | Container idle timeout (seconds) | 500 |
+| `CONCURRENCY_LIMIT` | Max concurrent inputs per container (`@modal.concurrent`) | 1 |
+| `MODAL_CONTAINER_TIMEOUT` | Container scaledown window in seconds (`scaledown_window`) | 500 |
 | `MODAL_GPU_CONFIG` | GPU type for Modal deployment | A100 |
 | `API_PORT` | FastAPI server port | 7861 |
-| `MAX_CONTAINERS` | Maximum Modal containers | 10 |
+| `MAX_CONTAINERS` | Maximum Modal containers (`max_containers`) | 10 |
 | `MAX_BATCH_SIZE` | Maximum images per batch | 1000 |
 | `THREAD_POOL_SIZE` | Thread pool size | 40 |
 
