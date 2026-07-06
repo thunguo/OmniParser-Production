@@ -605,13 +605,17 @@ def create_modal_image():
             "ultralytics==8.3.70",
             "uvicorn>=0.27.0",
         )
-        .copy_local_file(
-            "weights/icon_detect/model.pt", "/root/weights/icon_detect/model.pt"
+        .add_local_file(
+            "weights/icon_detect/model.pt",
+            "/root/weights/icon_detect/model.pt",
+            copy=True,
         )
-        .copy_local_dir(
-            "weights/icon_caption_florence", "/root/weights/icon_caption_florence"
+        .add_local_dir(
+            "weights/icon_caption_florence",
+            "/root/weights/icon_caption_florence",
+            copy=True,
         )
-        .copy_local_dir("util", "/root/util")
+        .add_local_dir("util", "/root/util", copy=True)
     )
 
 
@@ -620,10 +624,10 @@ app = modal.App("omniparser", image=create_modal_image())
 
 @app.cls(
     gpu=ENV_CONFIG["MODAL_GPU_CONFIG"],
-    container_idle_timeout=ENV_CONFIG["MODAL_CONTAINER_TIMEOUT"],
-    allow_concurrent_inputs=ENV_CONFIG["CONCURRENCY_LIMIT"],
-    concurrency_limit=ENV_CONFIG["MAX_CONTAINERS"],
+    scaledown_window=ENV_CONFIG["MODAL_CONTAINER_TIMEOUT"],
+    max_containers=ENV_CONFIG["MAX_CONTAINERS"],
 )
+@modal.concurrent(max_inputs=ENV_CONFIG["CONCURRENCY_LIMIT"])
 class ModalContainer:
     """Modal container for deploying OmniParser on Modal platform."""
 
@@ -636,7 +640,7 @@ class ModalContainer:
         logger.info("Initializing Modal container...")
         self.omniparser.init_models()
 
-    @modal.web_endpoint(method="POST")
+    @modal.fastapi_endpoint(method="POST")
     def process_image(self, req: ProcessRequest) -> ProcessResult:
         """Process a single image"""
         result = self.omniparser.process_image(
@@ -655,7 +659,7 @@ class ModalContainer:
 
         return ProcessResult(**result)
 
-    @modal.web_endpoint(method="POST")
+    @modal.fastapi_endpoint(method="POST")
     def process_batched(self, req: BatchProcessRequest) -> List[ProcessResult]:
         """Process multiple images in a single request, in parallel"""
         batch_id = f"batch_{str(uuid.uuid4())[:8]}"
